@@ -1,4 +1,6 @@
-class Board:
+import numpy as np
+
+class SokobanEnv:
     # format of coordinates is (row, column) 1-indexed
     # @param size: a list with num columns and num rows
     # @param walls: a set of tuples each containing coordinates of walls
@@ -6,8 +8,7 @@ class Board:
     # @param walls: a set of tuples each containing coordinates of storage
     # @param start: a tuple containing coordinates of start space
     def __init__(self, size, walls, boxes, storage, start):
-        self.columns = size[0]
-        self.rows = size[1]
+        self.columns, self.rows = size
         self.walls = walls
         self.boxes = boxes
         self.storage = storage

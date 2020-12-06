@@ -1,4 +1,4 @@
-from Board import Board
+from sokoban_env import SokobanEnv
 
 
 # @param filename: filename of input
@@ -39,4 +39,4 @@ def read_sokoban_input(filename):
         inputs = line.split()
         start = (int(inputs[0]), int(inputs[1]))
 
-    return Board(size, walls, boxes, storages, start)
+    return SokobanEnv(size, walls, boxes, storages, start)
