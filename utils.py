@@ -1,6 +1,4 @@
-from sokoban_env import SokobanEnv
-
-
+import numpy as np
 # @param filename: filename of input
 # @return: a Board made from the input file
 def read_sokoban_input(filename):
@@ -39,4 +37,22 @@ def read_sokoban_input(filename):
         inputs = line.split()
         start = (int(inputs[0]), int(inputs[1]))
 
-    return SokobanEnv(size, walls, boxes, storages, start)
+    return size, walls, boxes, storages, start
+
+def parse(filename):
+    size, walls, boxes, targets, start = read_sokoban_input(filename=filename)
+    cols, rows = size
+    map = [[""]*cols for i in range(rows)]
+    for row in range(1, rows+1):
+        for col in range(1, cols+1):
+            if (row, col) in walls:
+                map[row-1][col-1] = "#"
+            elif (row, col) in boxes:
+                map[row-1][col-1] = "$"
+            elif (row, col) in targets:
+                map[row-1][col-1] = "."
+            elif (row, col) == start:
+                map[row-1][col-1] = "@"
+            else:
+                map[row-1][col-1] = " "
+    return (rows, cols), len(boxes), map

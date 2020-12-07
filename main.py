@@ -1,6 +1,8 @@
-from utils import read_sokoban_input
-from sokoban_env import SokobanEnv
+from utils import parse
+import gym
+import gym_sokoban
 
 if __name__ == '__main__':
-    my_board = read_sokoban_input('sokoban00.txt')
-    my_board.print()
+    dim_room, n_boxes, map = parse("sokoban00.txt")
+    env = gym.make("MCTS-Sokoban-v0", dim_room=dim_room, n_boxes=n_boxes, map=map)
+    
