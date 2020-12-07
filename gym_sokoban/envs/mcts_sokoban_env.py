@@ -67,17 +67,19 @@ class MCTSSokobanEnv(SokobanEnv):
         return np.array(room_fixed), np.array(room_state), box_mapping
     
     def simulate_step(self, action, state):
-        room_state, player_position, boxes_on_target = state
+        boxes_on_target, num_env_steps, player_position, room_state = state
         self.backup_env_states()
         self.room_state = room_state
         self.player_position = player_position
         self.boxes_on_target = boxes_on_target
+        self.num_env_steps = num_env_steps
         observation, reward_last, done, info = self.step(action, observation_mode="raw")
-        new_room_state = self.room_state
-        new_player_position = self.player_position
         new_boxes_on_target = self.boxes_on_target
+        new_num_env_steps = self.num_env_steps
+        new_player_position = self.player_position
+        new_room_state = self.room_state
         self.restore_env_states()
-        return (new_room_state, new_player_position, new_boxes_on_target), observation, reward_last, done, info
+        return (new_boxes_on_target, new_num_env_steps, new_player_position, new_room_state), observation, reward_last, done, info
     
     def backup_env_states(self):
         self.reward_last_backup = copy.deepcopy(self.reward_last)
