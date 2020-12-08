@@ -48,7 +48,7 @@ class MCTS:
     def expand(self, node):
         untried_actions = set(self.actions) - set([child.action for child in node.children])
         action = random.choice(tuple(untried_actions))
-        state, observation, reward_last, done, info = self.env.simulate_step(action=action, state=node.state)
+        state, observation, reward_last, done, info = self.env.simulate_step(action=action, state=node.state) # I don't know if this immediate reward is important to the child node
         new_child = Node(state, done=done, parent=node, action=action)
         node.children.append(new_child)
         return new_child
