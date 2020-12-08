@@ -7,7 +7,7 @@ from math import sqrt, log
 
 
 class MCTS:
-    def __init__(self, env, max_rollouts = 10000, max_depth = 30, actions = np.array([1,2,3,4])):
+    def __init__(self, env, max_rollouts = 10000, max_depth = 30, actions = [1,2,3,4]):
         self.env = env
         self.max_rollouts = max_rollouts
         self.max_depth = max_depth
@@ -16,10 +16,10 @@ class MCTS:
         
 # @param env: a Board that the function will attempt to solve
 # @return: a list of actions to solve the board
-    def take_best_action(self):
+    def take_best_action(self, observation_mode="rgb_array"):
         env_state = self.env.get_current_state()
         best_action = self.mcts(env_state)
-        observation, reward, done, info = self.env.step(best_action)
+        observation, reward, done, info = self.env.step(best_action, observation_mode=observation_mode)
         return observation, reward, done, info
 
     # @param env: a mcts_sokoban_env that we are trying to find best move for
