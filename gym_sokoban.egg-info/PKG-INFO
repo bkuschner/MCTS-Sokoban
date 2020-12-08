@@ -6,7 +6,7 @@ Home-page: UNKNOWN
 Author: Max-Philipp Schrader
 License: UNKNOWN
 Description: # MCTS-Sokoban
-        A Sokoban solver using Monte Carlo Tree Search
+        A Sokoban solver using Monte Carlo Tree Search. 
         Install environment "pip install -e ." in this directory. Refer back to https://github.com/mpSchrader/gym-sokoban.
 Platform: UNKNOWN
 Classifier: Programming Language :: Python :: 3
