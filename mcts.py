@@ -38,7 +38,7 @@ class MCTS:
 
     def select_and_expand(self, tree):
         while not tree.done:
-            if len([child.action for child in tree.children]) != len(self.actions):
+            if len([child.action for child in tree.children]) < len(self.actions):
                 return self.expand(tree)
             else:
                 tree = self.ucb_select(tree)

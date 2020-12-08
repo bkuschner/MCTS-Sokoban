@@ -28,7 +28,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--file", help= "file that defines the sokoban map", required= True)
-    parser.add_argument("--render_mode", help="Obversation mode for the game", default="raw")
+    parser.add_argument("--render_mode", help="Obversation mode for the game", default="human")
     parser.add_argument("--max_mcts_rollouts", type=int, help="Number of rollouts per move", default=10000)
     parser.add_argument("--max_mcts_depth", type=int, help="Depth of each rollout", default=30)
     parser.add_argument("--max_steps", type=int, help="Max moves before game is lost", default=120)
