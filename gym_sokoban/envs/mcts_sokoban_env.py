@@ -70,19 +70,12 @@ class MCTSSokobanEnv(SokobanEnv):
         return current_state
     
     def simulate_step(self, action, state):
-        boxes_on_target, num_env_steps, player_position, room_state = state
         self.backup_env_states()
-        self.room_state = room_state
-        self.player_position = player_position
-        self.boxes_on_target = boxes_on_target
-        self.num_env_steps = num_env_steps
+        self.boxes_on_target, self.num_env_steps, self.player_position, self.room_state = state
         observation, reward_last, done, info = self.step(action, observation_mode="raw")
-        new_boxes_on_target = self.boxes_on_target
-        new_num_env_steps = self.num_env_steps
-        new_player_position = self.player_position
-        new_room_state = self.room_state
+        new_state = (self.boxes_on_target, self.num_env_steps, self.player_position, self.room_state)
         self.restore_env_states()
-        return (new_boxes_on_target, new_num_env_steps, new_player_position, new_room_state), observation, reward_last, done, info
+        return new_state, observation, reward_last, done, info
     
     def backup_env_states(self):
         self.reward_last_backup = self.reward_last
