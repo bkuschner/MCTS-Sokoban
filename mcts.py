@@ -68,3 +68,20 @@ class MCTS:
             total_reward = total_reward + reward
             depth = depth + 1
         return total_reward + self.heuristic(node)
+
+    def heuristic(self, node):
+        total = 0
+        arr_goals = (node.data.room_fixed == 2).view(np.int8)
+        arr_boxes = ((node.data.room_state == 4) + (node.data.room_state == 3)).view(np.int8)
+        # find distance between each box and its nearest storage
+        for i in range(len(arr_boxes)):
+            for j in range(len(arr_boxes[i])):
+                if arr_boxes[i][j] == 1: # found a box
+                    min_dist = 9999999
+                    # check every storage
+                    for k in range(len(arr_goals)):
+                        for l in range(len(arr_goals[k])):
+                            if arr_goals[k][l] == 1: # found a storage
+                                min_dist = min(min_dist, abs(i - k) + abs(j - l))
+                    total = total + min_dist
+        return total * node.data.penalty_for_step
