@@ -39,6 +39,12 @@ def read_sokoban_input(filename):
 
     return size, walls, boxes, storages, start
 
+# @param filename: name of file containing sokoban input
+# @return (rows, cols): 2-tuple containing rows and columns of sokoban board
+# @return len(boxes): number of boxes in the board
+# @return map: 2d list containing the board with
+#  '#' for walls, '$' for boxes, '.' for storages, '@' for player, and ' ' for empty spaces
+# parse sokoban input and return the dimensions of board, number of boxes, and map
 def parse(filename):
     size, walls, boxes, targets, start = read_sokoban_input(filename=filename)
     cols, rows = size
