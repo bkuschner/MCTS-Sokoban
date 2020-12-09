@@ -54,9 +54,17 @@ class MCTS:
         return new_child
 
     def ucb_select(self, tree):
+        # I think the implementation I had before would be better since, we would want to at least strongly prefer to select nodes with 0 playouts
         valid_children = [child for child in tree.children if child.rollouts > 0]
         best_child = max(valid_children, key = lambda child: ((child.utility / child.rollouts) + (sqrt(2) * log(tree.rollouts) / child.rollouts)))
         return best_child
 
     def simulate(self, node):
-        pass
+        depth = 0
+        total_reward = 0
+        while not node.done and depth < self.max_depth:
+            action = random.choice(self.actions)
+            node, observation, reward, done, info = self.env.simulate_step(action=action, state=node.state)
+            total_reward = total_reward + reward
+            depth = depth + 1
+        return total_reward + self.heuristic(node)
