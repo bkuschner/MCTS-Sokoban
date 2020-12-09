@@ -54,25 +54,33 @@ class MCTS:
         return new_child
 
     def ucb_select(self, tree):
-        # I think the implementation I had before would be better since, we would want to at least strongly prefer to select nodes with 0 playouts
-        valid_children = [child for child in tree.children if child.rollouts > 0]
-        best_child = max(valid_children, key = lambda child: ((child.utility / child.rollouts) + (sqrt(2) * log(tree.rollouts) / child.rollouts)))
-        return best_child
+        max_value = -1
+        for child in tree.children:
+            # avoid divide by 0
+            if child.rollouts == 0:
+                return child
+            child_value = (child.utility / child.rollouts) + (sqrt(2) * log(tree.rollouts) / child.rollouts)
+            if child_value > max_value:
+                max_value = child_value
+                max_node = child
+        return max_node
 
     def simulate(self, node):
         depth = 0
         total_reward = 0
         while not node.done and depth < self.max_depth:
             action = random.choice(self.actions)
-            node, observation, reward, done, info = self.env.simulate_step(action=action, state=node.state)
+            new_state, observation, reward, new_done, info = self.env.simulate_step(action=action, state=node.state)
+            node.state = new_state
+            node.done = new_done
             total_reward = total_reward + reward
             depth = depth + 1
         return total_reward + self.heuristic(node)
 
     def heuristic(self, node):
         total = 0
-        arr_goals = (node.state.room_fixed == 2).view(np.int8)
-        arr_boxes = ((node.state.room_state == 4) + (node.state.room_state == 3)).view(np.int8)
+        arr_goals = (self.env.room_fixed == 2).view(np.int8)
+        arr_boxes = ((self.env.room_state == 4) + (self.env.room_state == 3)).view(np.int8)
         # find distance between each box and its nearest storage
         for i in range(len(arr_boxes)):
             for j in range(len(arr_boxes[i])):
@@ -84,8 +92,9 @@ class MCTS:
                             if arr_goals[k][l] == 1: # found a storage
                                 min_dist = min(min_dist, abs(i - k) + abs(j - l))
                     total = total + min_dist
-        return total * node.state.penalty_for_step
+        return total * self.env.penalty_for_step
 
+    # TODO: check if this actually works
     def back_propagate(self, result, node):
         while node is not None:
             node.utility = node.utility + result
