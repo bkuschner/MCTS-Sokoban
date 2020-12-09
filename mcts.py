@@ -71,8 +71,8 @@ class MCTS:
 
     def heuristic(self, node):
         total = 0
-        arr_goals = (node.data.room_fixed == 2).view(np.int8)
-        arr_boxes = ((node.data.room_state == 4) + (node.data.room_state == 3)).view(np.int8)
+        arr_goals = (node.state.room_fixed == 2).view(np.int8)
+        arr_boxes = ((node.state.room_state == 4) + (node.state.room_state == 3)).view(np.int8)
         # find distance between each box and its nearest storage
         for i in range(len(arr_boxes)):
             for j in range(len(arr_boxes[i])):
@@ -84,4 +84,10 @@ class MCTS:
                             if arr_goals[k][l] == 1: # found a storage
                                 min_dist = min(min_dist, abs(i - k) + abs(j - l))
                     total = total + min_dist
-        return total * node.data.penalty_for_step
+        return total * node.state.penalty_for_step
+
+    def back_propagate(self, result, node):
+        while node is not None:
+            node.utility = node.utility + result
+            node.rollouts = node.rollouts + 1
+            node = node.parent

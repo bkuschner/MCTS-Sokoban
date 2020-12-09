@@ -14,7 +14,7 @@ def main(args):
         observation_mode = "tiny_rgb_array"
     else:
         observation_mode = "rgb_array"
-    env = gym.make("MCTS-Sokoban-v0", dim_room=dim_room, n_boxes=n_boxes, map=map, max_steps=args.max_steps)
+    env = gym.make("MCTS-Sokoban-v0", dim_room=dim_room, num_boxes=n_boxes, original_map=map, max_steps=args.max_steps)
     solver = MCTS(env=env, max_rollouts=args.max_mcts_rollouts, max_depth=args.max_mcts_depth, actions=LEGAL_ACTIONS)
     for i in range(args.max_steps):
         env.render(mode=args.render_mode)
