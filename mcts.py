@@ -22,7 +22,6 @@ class MCTS:
         self.max_rollouts = max_rollouts
         self.max_depth = max_depth
         self.actions = actions
-        self.discount_rate = discount_rate
         # env_state := boxes_on_target(int), num_env_steps(int), player_position(numpy array), room_state(numpy array)
         
 # @param env: a Board that the function will attempt to solve
@@ -37,11 +36,12 @@ class MCTS:
     # @return: best move found for the given env
     def mcts(self, env_state):
         root = Node(env_state)
-        while root.rollouts <= self.max_rollouts:
-            child = self.select_and_expand(root)
-            result = self.simulate(child)
+        rollouts = 0
+        while rollouts <= self.max_rollouts:
+            child, immediate_reward = self.select_and_expand(root)
+            result = self.simulate(child, immediate_reward)
             self.back_propagate(result, child)
-            root.rollouts += 1
+            rollouts += 1
 
         # find and return the action that got rolled out the most
         for child in root.children:
@@ -56,25 +56,24 @@ class MCTS:
             else:
                 tree = self.ucb_select(tree)
 
-        return tree
+        return tree, 0
 
     def expand(self, node):
         untried_actions = set(self.actions) - set([child.action for child in node.children])
         action = random.choice(tuple(untried_actions))
         state, observation, reward_last, done, info = self.env.simulate_step(action=action, state=node.state) # I don't know if this immediate reward is important to the child node
         new_child = Node(state, done=done, parent=node, action=action)
-        new_child.utility = reward_last
         node.children.append(new_child)
-        return new_child
+        return new_child, reward_last
 
     def ucb_select(self, tree):
         #FATAL ERROR IF CHILD.ROLLOUTS == 0
         best_child = max(tree.children, key = lambda child: ((child.utility / child.rollouts) + (sqrt(2) * log(tree.rollouts) / child.rollouts)))
         return best_child
 
-    def simulate(self, node):
+    def simulate(self, node, immediate_reward):
         depth = 0
-        total_reward = 0
+        total_reward = immediate_reward
         state = node.state
         done = node.done
         while not done and depth < self.max_depth:
@@ -105,6 +104,5 @@ class MCTS:
     def back_propagate(self, result, node):
         while node is not None:
             node.utility = node.utility + result
-            result *= self.discount_rate
             node.rollouts = node.rollouts + 1
             node = node.parent
