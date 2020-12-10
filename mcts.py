@@ -100,7 +100,7 @@ class MCTS:
                     total = total + min_dist
         return total * self.env.penalty_for_step
 
-    # TODO: check if this actually works #IT WORKS
+    # TODO: check if this actually works
     def back_propagate(self, result, node):
         while node is not None:
             node.utility = node.utility + result
