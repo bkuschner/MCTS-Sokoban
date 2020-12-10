@@ -4,7 +4,17 @@ import random
 import numpy as np
 from math import sqrt, log
 
-
+ACTION_LOOKUP = {
+    0: 'no operation',
+    1: 'push up',
+    2: 'push down',
+    3: 'push left',
+    4: 'push right',
+    5: 'move up',
+    6: 'move down',
+    7: 'move left',
+    8: 'move right',
+}
 
 class MCTS:
     def __init__(self, env, max_rollouts = 10000, max_depth = 30, actions = [1,2,3,4]):
@@ -30,10 +40,11 @@ class MCTS:
             child = self.select_and_expand(root)
             result = self.simulate(child)
             self.back_propagate(result, child)
-            #root.print_tree()
             root.rollouts += 1
 
         # find and return the action that got rolled out the most
+        for child in root.children:
+            print(ACTION_LOOKUP[child.action], child.utility, child.rollouts)
         best_child = max(root.children, key= lambda child: child.rollouts)
         return best_child.action
 
@@ -51,37 +62,31 @@ class MCTS:
         action = random.choice(tuple(untried_actions))
         state, observation, reward_last, done, info = self.env.simulate_step(action=action, state=node.state) # I don't know if this immediate reward is important to the child node
         new_child = Node(state, done=done, parent=node, action=action)
+        new_child.utility = reward_last
         node.children.append(new_child)
         return new_child
 
     def ucb_select(self, tree):
-        max_value = -99999999
-        for child in tree.children:
-            # avoid divide by 0
-            if child.rollouts == 0:
-                return child
-            child_value = (child.utility / child.rollouts) + (sqrt(2) * log(tree.rollouts) / child.rollouts)
-            if child_value > max_value:
-                max_value = child_value
-                max_node = child
-        return max_node
+        #FATAL ERROR IF CHILD.ROLLOUTS == 0
+        best_child = max(tree.children, key = lambda child: ((child.utility / child.rollouts) + (sqrt(2) * log(tree.rollouts) / child.rollouts)))
+        return best_child
 
     def simulate(self, node):
         depth = 0
         total_reward = 0
-        while not node.done and depth < self.max_depth:
+        state = node.state
+        done = node.done
+        while not done and depth < self.max_depth:
             action = random.choice(self.actions)
-            new_state, observation, reward, new_done, info = self.env.simulate_step(action=action, state=node.state)
-            node.state = new_state
-            node.done = new_done
+            state, observation, reward, done, info = self.env.simulate_step(action=action, state=state)
             total_reward = total_reward + reward
             depth = depth + 1
         return total_reward + self.heuristic(node)
 
     def heuristic(self, node):
         total = 0
-        arr_goals = (self.env.room_fixed == 2).view(np.int8)
-        arr_boxes = ((self.env.room_state == 4) + (self.env.room_state == 3)).view(np.int8)
+        arr_goals = (self.env.room_fixed == 2)
+        arr_boxes = ((node.state[3] == 4) + (node.state[3] == 3))
         # find distance between each box and its nearest storage
         for i in range(len(arr_boxes)):
             for j in range(len(arr_boxes[i])):
@@ -95,7 +100,7 @@ class MCTS:
                     total = total + min_dist
         return total * self.env.penalty_for_step
 
-    # TODO: check if this actually works
+    # TODO: check if this actually works #IT WORKS
     def back_propagate(self, result, node):
         while node is not None:
             node.utility = node.utility + result
