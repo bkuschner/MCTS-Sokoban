@@ -67,18 +67,9 @@ class MCTS:
         return new_child
 
     def ucb_select(self, tree):
-        max_value = -1
-        for child in tree.children:
-            # avoid divide by 0
-            if child.rollouts == 0:
-                #FATAL ERROR
-                exit(-1)
-                return child
-            child_value = (child.utility / child.rollouts) + (sqrt(2) * log(tree.rollouts) / child.rollouts)
-            if child_value > max_value:
-                max_value = child_value
-                max_node = child
-        return max_node
+        #FATAL ERROR IF CHILD.ROLLOUTS == 0
+        best_child = max(tree.children, key = lambda child: ((child.utility / child.rollouts) + (sqrt(2) * log(tree.rollouts) / child.rollouts)))
+        return best_child
 
     def simulate(self, node):
         depth = 0
@@ -113,6 +104,5 @@ class MCTS:
     def back_propagate(self, result, node):
         while node is not None:
             node.utility = node.utility + result
-            result += self.env.penalty_for_step
             node.rollouts = node.rollouts + 1
             node = node.parent
