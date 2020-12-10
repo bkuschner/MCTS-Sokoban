@@ -30,6 +30,7 @@ class MCTS:
             child = self.select_and_expand(root)
             result = self.simulate(child)
             self.back_propagate(result, child)
+            #root.print_tree()
             root.rollouts += 1
 
         # find and return the action that got rolled out the most
@@ -54,7 +55,7 @@ class MCTS:
         return new_child
 
     def ucb_select(self, tree):
-        max_value = -1
+        max_value = -99999999
         for child in tree.children:
             # avoid divide by 0
             if child.rollouts == 0:
