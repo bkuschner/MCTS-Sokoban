@@ -17,11 +17,12 @@ ACTION_LOOKUP = {
 }
 
 class MCTS:
-    def __init__(self, env, max_rollouts = 10000, max_depth = 30, actions = [1,2,3,4]):
+    def __init__(self, env, max_rollouts = 10000, max_depth = 30, actions = [1,2,3,4], discount_rate = 0.8):
         self.env = env
         self.max_rollouts = max_rollouts
         self.max_depth = max_depth
         self.actions = actions
+        self.discount_rate = discount_rate
         # env_state := boxes_on_target(int), num_env_steps(int), player_position(numpy array), room_state(numpy array)
         
 # @param env: a Board that the function will attempt to solve
@@ -104,5 +105,6 @@ class MCTS:
     def back_propagate(self, result, node):
         while node is not None:
             node.utility = node.utility + result
+            result *= self.discount_rate
             node.rollouts = node.rollouts + 1
             node = node.parent
