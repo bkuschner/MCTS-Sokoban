@@ -21,7 +21,7 @@ class Node(NodeMixin):
             current_node = frontier.get()
             for child in current_node.children:
                 frontier.put(child)
-            #print("utility: " + str(current_node.utility))
-            #print("roullouts: " + str(current_node.rollouts))
+            print("utility: " + str(current_node.utility))
+            print("roullouts: " + str(current_node.rollouts))
             print("children: " + str(len(current_node.children)))
 '''

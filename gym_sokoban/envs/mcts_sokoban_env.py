@@ -33,26 +33,29 @@ class MCTSSokobanEnv(SokobanEnv):
             room_s = []
 
             for e in row:
+                # wall
                 if e == '#':
                     room_f.append(0)
                     room_s.append(0)
 
+                # player position
                 elif e == '@':
                     self.player_position = np.array([len(room_fixed), len(room_f)])
                     room_f.append(1)
                     room_s.append(5)
 
-
+                # box
                 elif e == '$':
                     boxes.append((len(room_fixed), len(room_f)))
                     room_f.append(1)
                     room_s.append(4)
-
+                # storage
                 elif e == '.':
                     targets.append((len(room_fixed), len(room_f)))
                     room_f.append(2)
                     room_s.append(2)
 
+                # empty space
                 else:
                     room_f.append(1)
                     room_s.append(1)
@@ -69,10 +72,15 @@ class MCTSSokobanEnv(SokobanEnv):
     def get_current_state(self):
         current_state = (self.boxes_on_target, self.num_env_steps, self.player_position.copy(), self.room_state.copy())
         return current_state
-    
+
+    # @param action: an int representing the action to take in this step
+    # @param state: a 4-tuple containing boxes on target, steps taken so far, player position, and room_state
+    # @return: a state of the same form, an observation, reward from taking the step, boolean indicating if the game is
+    # done, and info about the step
     def simulate_step(self, action, state):
         boxes_on_target, num_env_steps, player_position, room_state = state
-        self.boxes_on_target, self.num_env_steps, self.player_position, self.room_state = boxes_on_target, num_env_steps, player_position.copy(),room_state.copy() 
+        self.boxes_on_target, self.num_env_steps, self.player_position, self.room_state \
+            = boxes_on_target, num_env_steps, player_position.copy(), room_state.copy()
         observation, reward_last, done, info = self.step(action, observation_mode="raw", real=False)
         new_state = (self.boxes_on_target, self.num_env_steps, self.player_position, self.room_state)
         return new_state, observation, reward_last, done, info

@@ -18,7 +18,7 @@ ACTION_LOOKUP = {
 }
 
 class MCTS:
-    def __init__(self, env, max_rollouts = 100, max_depth = 25, actions = [1,2,3,4], verbose = False):
+    def __init__(self, env, max_rollouts = 300, max_depth = 30, actions = [1,2,3,4], verbose = False):
         self.env = env
         self.step = 0
         self.max_rollouts = max_rollouts
@@ -29,6 +29,7 @@ class MCTS:
         self.num_boxes= env.num_boxes
         self.room_fixed = env.room_fixed
         self.last_pos = env.player_position
+        self.moved_box = False
         self.verbose = verbose
         # env_state := boxes_on_target(int), num_env_steps(int), player_position(numpy array), room_state(numpy array)
         
@@ -37,8 +38,12 @@ class MCTS:
     def take_best_action(self, observation_mode="rgb_array"):
         env_state = self.env.get_current_state()
         best_action = self.mcts(env_state)
+        #if mcts couldn't find a sensible move from this position
+        if best_action == -1:
+            return None, -1, True, "MCTS Gave up, board unsolvable. Reset board"
         observation, reward, done, info = self.env.step(best_action, observation_mode=observation_mode)
         self.last_pos = env_state[2]
+        self.moved_box = info["action.moved_box"]
         return observation, reward, done, info
 
     # @param env: a mcts_sokoban_env that we are trying to find best move for
@@ -48,6 +53,9 @@ class MCTS:
         rollouts = 0
         while rollouts <= self.max_rollouts:
             child, immediate_reward = self.select_and_expand(root)
+            #Board is unsolvable
+            if np.isneginf(immediate_reward):
+                return -1
             result = self.simulate(child, immediate_reward)
             self.back_propagate(result, child)
             rollouts += 1
@@ -58,14 +66,16 @@ class MCTS:
                 treestr = u"%s%s" % (pre, node.name)
                 print(treestr.ljust(8), node.utility/ node.rollouts, node.rollouts)
         best_child = max(root.children, key= lambda child: child.rollouts)
+
         return best_child.action
 
     def select_and_expand(self, tree):
         while not tree.done:
-            allow_back = True if tree.parent == None else False
-            sensible_actions = self.sensible_actions(tree.state[2], tree.state[3], go_back=allow_back)
+            sensible_actions = self.sensible_actions(tree.state[2], tree.state[3])
             if len([child.action for child in tree.children]) < len(sensible_actions):
                 return self.expand(tree, sensible_actions)
+            elif len(sensible_actions) == 0:
+                return tree, -np.inf
             else:
                 tree = self.ucb_select(tree)
         if self.num_boxes == tree.state[0]:
@@ -120,14 +130,14 @@ class MCTS:
             result += self.penalty_for_step
             node = node.parent
 
-    def sensible_actions(self, player_position, room_state, go_back = False):
-        def sensible(action, room_state, player_position, go_back = False):
+    def sensible_actions(self, player_position, room_state):
+        def sensible(action, room_state, player_position):
             change = CHANGE_COORDINATES[action - 1] 
             new_pos = player_position + change
             #if the next pos is a wall
             if room_state[new_pos[0], new_pos[1]] == 0:
                 return False
-            if not go_back and np.array_equal(new_pos, self.last_pos):
+            if np.array_equal(new_pos, self.last_pos) and not self.moved_box:
                 return False
             new_box_position = new_pos + change
             # if a box is already at a wall
@@ -138,21 +148,23 @@ class MCTS:
             can_push_box &= room_state[new_box_position[0], new_box_position[1]] in [1, 2]
             if can_push_box:
                 if self.room_fixed[new_box_position[0], new_box_position[1]] != 2:
-                    box_surroundings = []
+                    box_surroundings_walls = []
                     for i in range(4):
                         surrounding_block = new_box_position + CHANGE_COORDINATES[i]
-                        if room_state[surrounding_block[0], surrounding_block[1]] in [0,4]:
-                            box_surroundings.append(True)
+                        if self.room_fixed[surrounding_block[0], surrounding_block[1]] == 0:
+                            box_surroundings_walls.append(True)
                         else:
-                            box_surroundings.append(False)
-                    obstructions_count = box_surroundings.count(True)
-                    if obstructions_count >= 2:
-                        if  obstructions_count > 2:
+                            box_surroundings_walls.append(False)
+                    if box_surroundings_walls.count(True) >= 2:
+                        if box_surroundings_walls.count(True) > 2:
                             return False
-                        if not ((box_surroundings[0] and box_surroundings[1]) or (box_surroundings[2] and box_surroundings[3])):
+                        if not ((box_surroundings_walls[0] and box_surroundings_walls[1]) or (box_surroundings_walls[2] and box_surroundings_walls[3])):
                             return False
+            # trying to push box into wall
+            if room_state[new_pos[0], new_pos[1]] in [3, 4] and room_state[new_box_position[0], new_box_position[1]] not in [1, 2]:
+                return False
             return True
-        return [action for action in self.actions if sensible(action, room_state, player_position, go_back = go_back)] 
+        return [action for action in self.actions if sensible(action, room_state, player_position)] 
     
 CHANGE_COORDINATES = {
     0: (-1, 0),
