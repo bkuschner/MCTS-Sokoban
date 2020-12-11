@@ -125,9 +125,9 @@ class MCTS:
             change = CHANGE_COORDINATES[action - 1] 
             new_pos = player_position + change
             #if the next pos is a wall
-            if not go_back and room_state[new_pos[0], new_pos[1]] == 0:
+            if room_state[new_pos[0], new_pos[1]] == 0:
                 return False
-            if np.array_equal(new_pos, self.last_pos):
+            if not go_back and np.array_equal(new_pos, self.last_pos):
                 return False
             new_box_position = new_pos + change
             # if a box is already at a wall
