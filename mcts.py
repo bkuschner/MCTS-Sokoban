@@ -18,7 +18,7 @@ ACTION_LOOKUP = {
 }
 
 class MCTS:
-    def __init__(self, env, max_rollouts = 10000, max_depth = 30, actions = [1,2,3,4], verbose = False):
+    def __init__(self, env, max_rollouts = 300, max_depth = 30, actions = [1,2,3,4], verbose = False):
         self.env = env
         self.step = 0
         self.max_rollouts = max_rollouts
