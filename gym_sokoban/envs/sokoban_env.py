@@ -51,7 +51,9 @@ class SokobanEnv(gym.Env):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def step(self, action, observation_mode='rgb_array'):
+    def step(self, action, observation_mode='rgb_array', real=True):
+        if real:
+            self.restore_env_states()
         assert action in ACTION_LOOKUP
         assert observation_mode in ['rgb_array', 'tiny_rgb_array', 'raw']
 
@@ -87,7 +89,8 @@ class SokobanEnv(gym.Env):
         if done:
             info["maxsteps_used"] = self._check_if_maxsteps()
             info["all_boxes_on_target"] = self._check_if_all_boxes_on_target()
-
+        if real:
+            self.backup_env_states()
         return observation, self.reward_last, done, info
 
     def _push(self, action):

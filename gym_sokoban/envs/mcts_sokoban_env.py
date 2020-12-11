@@ -1,7 +1,7 @@
 import numpy as np
 from .sokoban_env import SokobanEnv
 from .render_utils import room_to_rgb
-
+import copy
 class MCTSSokobanEnv(SokobanEnv):
     # format of coordinates is (row, column) 1-indexed
     # @param size: a list with num columns and num rows
@@ -19,6 +19,7 @@ class MCTSSokobanEnv(SokobanEnv):
         self.reward_last = 0
         self.boxes_on_target = 0
         starting_observation = room_to_rgb(self.room_state, self.room_fixed)
+        self.backup_env_states()
         return starting_observation
             
     def generate_room(self, select_map):
@@ -66,17 +67,16 @@ class MCTSSokobanEnv(SokobanEnv):
         return np.array(room_fixed), np.array(room_state), box_mapping
     
     def get_current_state(self):
-        current_state = (self.boxes_on_target, self.num_env_steps, self.player_position, self.room_state)
+        current_state = (self.boxes_on_target, self.num_env_steps, self.player_position.copy(), self.room_state.copy())
         return current_state
     
     def simulate_step(self, action, state):
-        self.backup_env_states()
-        self.boxes_on_target, self.num_env_steps, self.player_position, self.room_state = state
-        observation, reward_last, done, info = self.step(action, observation_mode="raw")
+        boxes_on_target, num_env_steps, player_position, room_state = state
+        self.boxes_on_target, self.num_env_steps, self.player_position, self.room_state = boxes_on_target, num_env_steps, player_position.copy(),room_state.copy() 
+        observation, reward_last, done, info = self.step(action, observation_mode="raw", real=False)
         new_state = (self.boxes_on_target, self.num_env_steps, self.player_position, self.room_state)
-        self.restore_env_states()
         return new_state, observation, reward_last, done, info
-    
+       
     def backup_env_states(self):
         self.reward_last_backup = self.reward_last
         self.boxes_on_target_backup = self.boxes_on_target
