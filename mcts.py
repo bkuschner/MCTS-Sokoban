@@ -18,7 +18,7 @@ ACTION_LOOKUP = {
 }
 
 class MCTS:
-    def __init__(self, env, max_rollouts = 10000, max_depth = 30, actions = [1,2,3,4], discount_rate = 0.8):
+    def __init__(self, env, max_rollouts = 10000, max_depth = 30, actions = [1,2,3,4], verbose = False):
         self.env = env
         self.step = 0
         self.max_rollouts = max_rollouts
@@ -29,6 +29,7 @@ class MCTS:
         self.num_boxes= env.num_boxes
         self.room_fixed = env.room_fixed
         self.last_pos = env.player_position
+        self.verbose = verbose
         # env_state := boxes_on_target(int), num_env_steps(int), player_position(numpy array), room_state(numpy array)
         
 # @param env: a Board that the function will attempt to solve
@@ -51,10 +52,11 @@ class MCTS:
             self.back_propagate(result, child)
             rollouts += 1
 
-        # find and return the action that got rolled out the most
-        for pre, fill, node in RenderTree(root):
-            treestr = u"%s%s" % (pre, node.name)
-            print(treestr.ljust(8), node.utility/ node.rollouts, node.rollouts)
+        if self.verbose:
+            for pre, fill, node in RenderTree(root):
+                treestr = u"%s%s" % (pre, node.name)
+                print(treestr.ljust(8), node.utility/ node.rollouts, node.rollouts)
+                
         best_child = max(root.children, key= lambda child: child.rollouts)
         return best_child.action
 
@@ -95,7 +97,7 @@ class MCTS:
 
     def heuristic(self, node):
         total = 0
-        arr_goals = (self.env.room_fixed == 2)
+        arr_goals = (self.room_fixed == 2)
         arr_boxes = ((node.state[3] == 4) + (node.state[3] == 3))
         # find distance between each box and its nearest storage
         for i in range(len(arr_boxes)):
@@ -138,12 +140,13 @@ class MCTS:
                     box_surroundings_walls = []
                     for i in range(4):
                         surrounding_block = new_box_position + CHANGE_COORDINATES[i]
-                        if self.room_fixed[surrounding_block[0], surrounding_block[1]] == 0:
+                        if room_state[surrounding_block[0], surrounding_block[1]] == 0:
                             box_surroundings_walls.append(True)
                         else:
                             box_surroundings_walls.append(False)
-                    if box_surroundings_walls.count(True) >= 2:
-                        if box_surroundings_walls > 2:
+                    wall_count = box_surroundings_walls.count(True) 
+                    if wall_count >= 2:
+                        if wall_count > 2:
                             return False
                         if not ((box_surroundings_walls[0] and box_surroundings_walls[1]) or (box_surroundings_walls[2] and box_surroundings_walls[3])):
                             return False
