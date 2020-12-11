@@ -28,7 +28,6 @@ class MCTS:
         self.reward_finished = env.reward_finished + env.reward_box_on_target
         self.num_boxes= env.num_boxes
         self.room_fixed = env.room_fixed
-        self.last_pos = env.player_position
         self.verbose = verbose
         # env_state := boxes_on_target(int), num_env_steps(int), player_position(numpy array), room_state(numpy array)
         
@@ -38,7 +37,6 @@ class MCTS:
         env_state = self.env.get_current_state()
         best_action = self.mcts(env_state)
         observation, reward, done, info = self.env.step(best_action, observation_mode=observation_mode)
-        self.last_pos = env_state[2]
         return observation, reward, done, info
 
     # @param env: a mcts_sokoban_env that we are trying to find best move for
@@ -126,8 +124,6 @@ class MCTS:
             #if the next pos is a wall
             if room_state[new_pos[0], new_pos[1]] == 0:
                 return False
-            if np.array_equal(new_pos, self.last_pos):
-                return False
             new_box_position = new_pos + change
             # if a box is already at a wall
             if new_box_position[0] >= room_state.shape[0] \
@@ -140,7 +136,7 @@ class MCTS:
                     box_surroundings_walls = []
                     for i in range(4):
                         surrounding_block = new_box_position + CHANGE_COORDINATES[i]
-                        if room_state[surrounding_block[0], surrounding_block[1]] == 0:
+                        if room_state[surrounding_block[0], surrounding_block[1]] in [0,4]:
                             box_surroundings_walls.append(True)
                         else:
                             box_surroundings_walls.append(False)
