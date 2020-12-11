@@ -18,7 +18,7 @@ ACTION_LOOKUP = {
 }
 
 class MCTS:
-    def __init__(self, env, max_rollouts = 10000, max_depth = 30, actions = [1,2,3,4], discount_rate = 0.8):
+    def __init__(self, env, max_rollouts = 10000, max_depth = 30, actions = [1,2,3,4], verbose = False):
         self.env = env
         self.step = 0
         self.max_rollouts = max_rollouts
@@ -30,6 +30,7 @@ class MCTS:
         self.room_fixed = env.room_fixed
         self.last_pos = env.player_position
         self.moved_box = False
+        self.verbose = verbose
         # env_state := boxes_on_target(int), num_env_steps(int), player_position(numpy array), room_state(numpy array)
         
 # @param env: a Board that the function will attempt to solve
@@ -37,10 +38,12 @@ class MCTS:
     def take_best_action(self, observation_mode="rgb_array"):
         env_state = self.env.get_current_state()
         best_action = self.mcts(env_state)
+        #if mcts couldn't find a sensible move from this position
+        if best_action == -1:
+            return None, -1, True, "MCTS Gave up, board unsolvable. Reset board"
         observation, reward, done, info = self.env.step(best_action, observation_mode=observation_mode)
         self.last_pos = env_state[2]
         self.moved_box = info["action.moved_box"]
-        print(self.moved_box)
         return observation, reward, done, info
 
     # @param env: a mcts_sokoban_env that we are trying to find best move for
@@ -50,14 +53,18 @@ class MCTS:
         rollouts = 0
         while rollouts <= self.max_rollouts:
             child, immediate_reward = self.select_and_expand(root)
+            #Board is unsolvable
+            if np.isneginf(immediate_reward):
+                return -1
             result = self.simulate(child, immediate_reward)
             self.back_propagate(result, child)
             rollouts += 1
 
         # find and return the action that got rolled out the most
-        #for pre, fill, node in RenderTree(root):
-            #treestr = u"%s%s" % (pre, node.name)
-            #print(treestr.ljust(8), node.utility/ node.rollouts, node.rollouts)
+        if self.verbose:
+            for pre, fill, node in RenderTree(root):
+                treestr = u"%s%s" % (pre, node.name)
+                print(treestr.ljust(8), node.utility/ node.rollouts, node.rollouts)
         best_child = max(root.children, key= lambda child: child.rollouts)
 
         return best_child.action
@@ -67,6 +74,8 @@ class MCTS:
             sensible_actions = self.sensible_actions(tree.state[2], tree.state[3])
             if len([child.action for child in tree.children]) < len(sensible_actions):
                 return self.expand(tree, sensible_actions)
+            elif len(sensible_actions) == 0:
+                return tree, -np.inf
             else:
                 tree = self.ucb_select(tree)
         if self.num_boxes == tree.state[0]:
