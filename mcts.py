@@ -25,7 +25,7 @@ class MCTS:
         self.max_depth = max_depth
         self.actions = actions
         self.penalty_for_step = env.penalty_for_step
-        self.reward_finished = env.reward_finished
+        self.reward_finished = env.reward_finished + env.reward_box_on_target
         self.num_boxes= env.num_boxes
         # env_state := boxes_on_target(int), num_env_steps(int), player_position(numpy array), room_state(numpy array)
         
@@ -64,18 +64,16 @@ class MCTS:
         if self.num_boxes == tree.state[0]:
             return tree, self.reward_finished
         else:
-            return tree, self.reward_finished
+            return tree, 0
 
     def expand(self, node):
         untried_actions = set(self.actions) - set([child.action for child in node.children])
         action = random.choice(tuple(untried_actions))
         state, observation, reward_last, done, info = self.env.simulate_step(action=action, state=node.state)
         new_child = Node(name=node.name +"-{}".format(action) , state=state, done=done, parent=node, action=action)
-        #node.children.append(new_child)
         return new_child, reward_last
 
     def ucb_select(self, tree):
-        #FATAL ERROR IF CHILD.ROLLOUTS == 0
         best_child = max(tree.children, key = lambda child: ((child.utility / child.rollouts) + (sqrt(2) * log(tree.rollouts) / child.rollouts)))
         return best_child
 
@@ -108,7 +106,6 @@ class MCTS:
                     total = total + min_dist
         return total * self.penalty_for_step
 
-    # TODO: check if this actually works
     def back_propagate(self, result, node):
         while node is not None:
             node.utility = node.utility + result
