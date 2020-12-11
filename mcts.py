@@ -104,12 +104,12 @@ class MCTS:
             state, observation, reward, done, info = self.env.simulate_step(action=action, state=state)
             total_reward = total_reward + reward
             depth = depth + 1
-        return total_reward + self.heuristic(node)
+        return total_reward + self.heuristic(state[3])
 
-    def heuristic(self, node):
+    def heuristic(self, room_state):
         total = 0
         arr_goals = (self.env.room_fixed == 2)
-        arr_boxes = ((node.state[3] == 4) + (node.state[3] == 3))
+        arr_boxes = ((room_state == 4) + (room_state == 3))
         # find distance between each box and its nearest storage
         for i in range(len(arr_boxes)):
             for j in range(len(arr_boxes[i])):
