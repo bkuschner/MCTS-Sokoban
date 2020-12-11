@@ -18,7 +18,7 @@ ACTION_LOOKUP = {
 }
 
 class MCTS:
-    def __init__(self, env, max_rollouts = 10000, max_depth = 30, actions = [1,2,3,4], discount_rate = 0.8):
+    def __init__(self, env, max_rollouts = 100, max_depth = 25, actions = [1,2,3,4], verbose = False):
         self.env = env
         self.step = 0
         self.max_rollouts = max_rollouts
@@ -29,6 +29,7 @@ class MCTS:
         self.num_boxes= env.num_boxes
         self.room_fixed = env.room_fixed
         self.last_pos = env.player_position
+        self.verbose = verbose
         # env_state := boxes_on_target(int), num_env_steps(int), player_position(numpy array), room_state(numpy array)
         
 # @param env: a Board that the function will attempt to solve
@@ -52,15 +53,17 @@ class MCTS:
             rollouts += 1
 
         # find and return the action that got rolled out the most
-        for pre, fill, node in RenderTree(root):
-            treestr = u"%s%s" % (pre, node.name)
-            print(treestr.ljust(8), node.utility/ node.rollouts, node.rollouts)
+        if self.verbose:
+            for pre, fill, node in RenderTree(root):
+                treestr = u"%s%s" % (pre, node.name)
+                print(treestr.ljust(8), node.utility/ node.rollouts, node.rollouts)
         best_child = max(root.children, key= lambda child: child.rollouts)
         return best_child.action
 
     def select_and_expand(self, tree):
         while not tree.done:
-            sensible_actions = self.sensible_actions(tree.state[2], tree.state[3], go_back=True)
+            allow_back = True if tree.parent == None else False
+            sensible_actions = self.sensible_actions(tree.state[2], tree.state[3], go_back=allow_back)
             if len([child.action for child in tree.children]) < len(sensible_actions):
                 return self.expand(tree, sensible_actions)
             else:
@@ -135,17 +138,18 @@ class MCTS:
             can_push_box &= room_state[new_box_position[0], new_box_position[1]] in [1, 2]
             if can_push_box:
                 if self.room_fixed[new_box_position[0], new_box_position[1]] != 2:
-                    box_surroundings_walls = []
+                    box_surroundings = []
                     for i in range(4):
                         surrounding_block = new_box_position + CHANGE_COORDINATES[i]
                         if room_state[surrounding_block[0], surrounding_block[1]] in [0,4]:
-                            box_surroundings_walls.append(True)
+                            box_surroundings.append(True)
                         else:
-                            box_surroundings_walls.append(False)
-                    if box_surroundings_walls.count(True) >= 2:
-                        if box_surroundings_walls > 2:
+                            box_surroundings.append(False)
+                    obstructions_count = box_surroundings.count(True)
+                    if obstructions_count >= 2:
+                        if  obstructions_count > 2:
                             return False
-                        if not ((box_surroundings_walls[0] and box_surroundings_walls[1]) or (box_surroundings_walls[2] and box_surroundings_walls[3])):
+                        if not ((box_surroundings[0] and box_surroundings[1]) or (box_surroundings[2] and box_surroundings[3])):
                             return False
             return True
         return [action for action in self.actions if sensible(action, room_state, player_position, go_back = go_back)] 
