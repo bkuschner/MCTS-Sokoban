@@ -3,6 +3,7 @@ from Node import Node
 import random
 import numpy as np
 from math import sqrt, log
+from anytree import RenderTree
 
 ACTION_LOOKUP = {
     0: 'no operation',
@@ -19,9 +20,13 @@ ACTION_LOOKUP = {
 class MCTS:
     def __init__(self, env, max_rollouts = 10000, max_depth = 30, actions = [1,2,3,4], discount_rate = 0.8):
         self.env = env
+        self.step = 0
         self.max_rollouts = max_rollouts
         self.max_depth = max_depth
         self.actions = actions
+        self.penalty_for_step = env.penalty_for_step
+        self.reward_finished = env.reward_finished
+        self.num_boxes= env.num_boxes
         # env_state := boxes_on_target(int), num_env_steps(int), player_position(numpy array), room_state(numpy array)
         
 # @param env: a Board that the function will attempt to solve
@@ -35,7 +40,7 @@ class MCTS:
     # @param env: a mcts_sokoban_env that we are trying to find best move for
     # @return: best move found for the given env
     def mcts(self, env_state):
-        root = Node(env_state)
+        root = Node("0",env_state)
         rollouts = 0
         while rollouts <= self.max_rollouts:
             child, immediate_reward = self.select_and_expand(root)
@@ -44,8 +49,9 @@ class MCTS:
             rollouts += 1
 
         # find and return the action that got rolled out the most
-        for child in root.children:
-            print(ACTION_LOOKUP[child.action], child.utility, child.rollouts)
+        for pre, fill, node in RenderTree(root):
+            treestr = u"%s%s" % (pre, node.name)
+            print(treestr.ljust(8), node.utility/ node.rollouts, node.rollouts)
         best_child = max(root.children, key= lambda child: child.rollouts)
         return best_child.action
 
@@ -55,15 +61,17 @@ class MCTS:
                 return self.expand(tree)
             else:
                 tree = self.ucb_select(tree)
-
-        return tree, 0
+        if self.num_boxes == tree.state[0]:
+            return tree, self.reward_finished
+        else:
+            return tree, self.reward_finished
 
     def expand(self, node):
         untried_actions = set(self.actions) - set([child.action for child in node.children])
         action = random.choice(tuple(untried_actions))
-        state, observation, reward_last, done, info = self.env.simulate_step(action=action, state=node.state) # I don't know if this immediate reward is important to the child node
-        new_child = Node(state, done=done, parent=node, action=action)
-        node.children.append(new_child)
+        state, observation, reward_last, done, info = self.env.simulate_step(action=action, state=node.state)
+        new_child = Node(name=node.name +"-{}".format(action) , state=state, done=done, parent=node, action=action)
+        #node.children.append(new_child)
         return new_child, reward_last
 
     def ucb_select(self, tree):
@@ -98,11 +106,12 @@ class MCTS:
                             if arr_goals[k][l] == 1: # found a storage
                                 min_dist = min(min_dist, abs(i - k) + abs(j - l))
                     total = total + min_dist
-        return total * self.env.penalty_for_step
+        return total * self.penalty_for_step
 
     # TODO: check if this actually works
     def back_propagate(self, result, node):
         while node is not None:
             node.utility = node.utility + result
             node.rollouts = node.rollouts + 1
+            result += self.penalty_for_step
             node = node.parent
