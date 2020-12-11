@@ -3,7 +3,7 @@ import gym
 import gym_sokoban
 import argparse
 from mcts import MCTS
-from time import time
+from time import time, sleep
 from pathlib import Path
 
 LEGAL_ACTIONS = [1,2,3,4]
@@ -40,6 +40,9 @@ def mcts_solve(args, file):
             print("Solved {} after {} steps.".format(file.name, i), file=log)
             break
     log.close()
+    env.render(mode=args.render_mode)
+    sleep(3)
+    env.close()
 
 def main(args):
     if args.file:
