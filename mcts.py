@@ -60,7 +60,7 @@ class MCTS:
 
     def select_and_expand(self, tree):
         while not tree.done:
-            sensible_actions = self.sensible_actions(tree.state[2], tree.state[3])
+            sensible_actions = self.sensible_actions(tree.state[2], tree.state[3], go_back=True)
             if len([child.action for child in tree.children]) < len(sensible_actions):
                 return self.expand(tree, sensible_actions)
             else:
@@ -117,12 +117,12 @@ class MCTS:
             result += self.penalty_for_step
             node = node.parent
 
-    def sensible_actions(self, player_position, room_state):
-        def sensible(action, room_state, player_position):
+    def sensible_actions(self, player_position, room_state, go_back = False):
+        def sensible(action, room_state, player_position, go_back = False):
             change = CHANGE_COORDINATES[action - 1] 
             new_pos = player_position + change
             #if the next pos is a wall
-            if room_state[new_pos[0], new_pos[1]] == 0:
+            if not go_back and room_state[new_pos[0], new_pos[1]] == 0:
                 return False
             if np.array_equal(new_pos, self.last_pos):
                 return False
@@ -138,7 +138,7 @@ class MCTS:
                     box_surroundings_walls = []
                     for i in range(4):
                         surrounding_block = new_box_position + CHANGE_COORDINATES[i]
-                        if self.room_fixed[surrounding_block[0], surrounding_block[1]] == 0:
+                        if room_state[surrounding_block[0], surrounding_block[1]] in [0,4]:
                             box_surroundings_walls.append(True)
                         else:
                             box_surroundings_walls.append(False)
@@ -148,7 +148,7 @@ class MCTS:
                         if not ((box_surroundings_walls[0] and box_surroundings_walls[1]) or (box_surroundings_walls[2] and box_surroundings_walls[3])):
                             return False
             return True
-        return [action for action in self.actions if sensible(action, room_state, player_position)] 
+        return [action for action in self.actions if sensible(action, room_state, player_position, go_back = go_back)] 
     
 CHANGE_COORDINATES = {
     0: (-1, 0),
