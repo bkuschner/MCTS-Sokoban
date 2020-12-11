@@ -27,6 +27,8 @@ class MCTS:
         self.penalty_for_step = env.penalty_for_step
         self.reward_finished = env.reward_finished + env.reward_box_on_target
         self.num_boxes= env.num_boxes
+        self.room_fixed = env.room_fixed
+        self.last_pos = env.player_position
         # env_state := boxes_on_target(int), num_env_steps(int), player_position(numpy array), room_state(numpy array)
         
 # @param env: a Board that the function will attempt to solve
@@ -35,6 +37,7 @@ class MCTS:
         env_state = self.env.get_current_state()
         best_action = self.mcts(env_state)
         observation, reward, done, info = self.env.step(best_action, observation_mode=observation_mode)
+        self.last_pos = env_state[2]
         return observation, reward, done, info
 
     # @param env: a mcts_sokoban_env that we are trying to find best move for
@@ -57,8 +60,9 @@ class MCTS:
 
     def select_and_expand(self, tree):
         while not tree.done:
-            if len([child.action for child in tree.children]) < len(self.actions):
-                return self.expand(tree)
+            sensible_actions = self.sensible_actions(tree.state[2], tree.state[3])
+            if len([child.action for child in tree.children]) < len(sensible_actions):
+                return self.expand(tree, sensible_actions)
             else:
                 tree = self.ucb_select(tree)
         if self.num_boxes == tree.state[0]:
@@ -66,8 +70,8 @@ class MCTS:
         else:
             return tree, 0
 
-    def expand(self, node):
-        untried_actions = set(self.actions) - set([child.action for child in node.children])
+    def expand(self, node, sensible_actions):
+        untried_actions = set(sensible_actions) - set([child.action for child in node.children])
         action = random.choice(tuple(untried_actions))
         state, observation, reward_last, done, info = self.env.simulate_step(action=action, state=node.state)
         new_child = Node(name=node.name +"-{}".format(action) , state=state, done=done, parent=node, action=action)
@@ -83,7 +87,7 @@ class MCTS:
         state = node.state
         done = node.done
         while not done and depth < self.max_depth:
-            action = random.choice(self.actions)
+            action = random.choice(self.sensible_actions(state[2], state[3]))
             state, observation, reward, done, info = self.env.simulate_step(action=action, state=state)
             total_reward = total_reward + reward
             depth = depth + 1
@@ -112,3 +116,43 @@ class MCTS:
             node.rollouts = node.rollouts + 1
             result += self.penalty_for_step
             node = node.parent
+
+    def sensible_actions(self, player_position, room_state):
+        def sensible(action, room_state, player_position):
+            change = CHANGE_COORDINATES[action - 1] 
+            new_pos = player_position + change
+            #if the next pos is a wall
+            if room_state[new_pos[0], new_pos[1]] == 0:
+                return False
+            if np.array_equal(new_pos, self.last_pos):
+                return False
+            new_box_position = new_pos + change
+            # if a box is already at a wall
+            if new_box_position[0] >= room_state.shape[0] \
+                or new_box_position[1] >= room_state.shape[1]:
+                    return False
+            can_push_box = room_state[new_pos[0], new_pos[1]] in [3, 4]
+            can_push_box &= room_state[new_box_position[0], new_box_position[1]] in [1, 2]
+            if can_push_box:
+                if self.room_fixed[new_box_position[0], new_box_position[1]] != 2:
+                    box_surroundings_walls = []
+                    for i in range(4):
+                        surrounding_block = new_box_position + CHANGE_COORDINATES[i]
+                        if self.room_fixed[surrounding_block[0], surrounding_block[1]] == 0:
+                            box_surroundings_walls.append(True)
+                        else:
+                            box_surroundings_walls.append(False)
+                    if box_surroundings_walls.count(True) >= 2:
+                        if box_surroundings_walls > 2:
+                            return False
+                        if not ((box_surroundings_walls[0] and box_surroundings_walls[1]) or (box_surroundings_walls[2] and box_surroundings_walls[3])):
+                            return False
+            return True
+        return [action for action in self.actions if sensible(action, room_state, player_position)] 
+    
+CHANGE_COORDINATES = {
+    0: (-1, 0),
+    1: (1, 0),
+    2: (0, -1),
+    3: (0, 1)
+}
