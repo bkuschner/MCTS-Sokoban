@@ -1,5 +1,6 @@
 .vscode/
 __pycache__/
 board/
-gym_sokoban.egg-info/
 *.log
+.sokoban_cache/
+gym_sokoban.egg-info/

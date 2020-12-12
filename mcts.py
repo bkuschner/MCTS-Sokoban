@@ -18,7 +18,7 @@ ACTION_LOOKUP = {
 }
 
 class MCTS:
-    def __init__(self, env, max_rollouts = 300, max_depth = 30, actions = [1,2,3,4], verbose = False):
+    def __init__(self, env, max_rollouts = 4000, max_depth = 30, actions = [1,2,3,4], verbose = False):
         self.env = env
         self.step = 0
         self.max_rollouts = max_rollouts
@@ -29,7 +29,7 @@ class MCTS:
         self.num_boxes= env.num_boxes
         self.room_fixed = env.room_fixed
         self.last_pos = env.player_position
-        self.moved_box = False
+        self.moved_box = True
         self.verbose = verbose
         # env_state := boxes_on_target(int), num_env_steps(int), player_position(numpy array), room_state(numpy array)
         
@@ -49,12 +49,12 @@ class MCTS:
     # @param env: a mcts_sokoban_env that we are trying to find best move for
     # @return: best move found for the given env
     def mcts(self, env_state):
-        root = Node("0",env_state)
+        root = Node("0",env_state, last_pos=self.last_pos, move_box=self.moved_box)
         rollouts = 0
         while rollouts <= self.max_rollouts:
             child, immediate_reward = self.select_and_expand(root)
-            #Board is unsolvable
-            if np.isneginf(immediate_reward):
+            #Board is unsolvable, if child is the root
+            if child.parent == None:
                 return -1
             result = self.simulate(child, immediate_reward)
             self.back_propagate(result, child)
@@ -71,11 +71,11 @@ class MCTS:
 
     def select_and_expand(self, tree):
         while not tree.done:
-            sensible_actions = self.sensible_actions(tree.state[2], tree.state[3])
+            sensible_actions = self.sensible_actions(tree.state[2], tree.state[3], tree.last_pos, tree.move_box)
             if len([child.action for child in tree.children]) < len(sensible_actions):
                 return self.expand(tree, sensible_actions)
             elif len(sensible_actions) == 0:
-                return tree, -np.inf
+                return tree, -self.reward_finished
             else:
                 tree = self.ucb_select(tree)
         if self.num_boxes == tree.state[0]:
@@ -87,7 +87,9 @@ class MCTS:
         untried_actions = set(sensible_actions) - set([child.action for child in node.children])
         action = random.choice(tuple(untried_actions))
         state, observation, reward_last, done, info = self.env.simulate_step(action=action, state=node.state)
-        new_child = Node(name=node.name +"-{}".format(action) , state=state, done=done, parent=node, action=action)
+        #print("here")
+        #print(node.state[2], state[2])
+        new_child = Node(name=node.name +"-{}".format(action) , state=state, last_pos= node.state[2], move_box = info["action.moved_box"], done=done, parent=node, action=action)
         return new_child, reward_last
 
     def ucb_select(self, tree):
@@ -99,16 +101,25 @@ class MCTS:
         total_reward = immediate_reward
         state = node.state
         done = node.done
+        last_pos = node.last_pos
+        move_box = node.move_box
         while not done and depth < self.max_depth:
-            action = random.choice(self.sensible_actions(state[2], state[3]))
-            state, observation, reward, done, info = self.env.simulate_step(action=action, state=state)
+            possible_actions = self.sensible_actions(state[2], state[3], last_pos, move_box)
+            if not possible_actions:
+                done = True
+                break
+            action = random.choice(possible_actions)
+            new_state, observation, reward, done, info = self.env.simulate_step(action=action, state=state)
+            last_pos = state[2]
+            move_box = info["action.moved_box"]
+            state = new_state
             total_reward = total_reward + reward
             depth = depth + 1
         return total_reward + self.heuristic(state[3])
 
     def heuristic(self, room_state):
         total = 0
-        arr_goals = (self.env.room_fixed == 2)
+        arr_goals = (self.room_fixed == 2)
         arr_boxes = ((room_state == 4) + (room_state == 3))
         # find distance between each box and its nearest storage
         for i in range(len(arr_boxes)):
@@ -130,14 +141,14 @@ class MCTS:
             result += self.penalty_for_step
             node = node.parent
 
-    def sensible_actions(self, player_position, room_state):
-        def sensible(action, room_state, player_position):
+    def sensible_actions(self, player_position, room_state, last_pos, move_box):
+        def sensible(action, room_state, player_position, last_pos, move_box):
             change = CHANGE_COORDINATES[action - 1] 
             new_pos = player_position + change
             #if the next pos is a wall
             if room_state[new_pos[0], new_pos[1]] == 0:
                 return False
-            if np.array_equal(new_pos, self.last_pos) and not self.moved_box:
+            if np.array_equal(new_pos, last_pos) and not move_box:
                 return False
             new_box_position = new_pos + change
             # if a box is already at a wall
@@ -164,7 +175,7 @@ class MCTS:
             if room_state[new_pos[0], new_pos[1]] in [3, 4] and room_state[new_box_position[0], new_box_position[1]] not in [1, 2]:
                 return False
             return True
-        return [action for action in self.actions if sensible(action, room_state, player_position)] 
+        return [action for action in self.actions if sensible(action, room_state, player_position, last_pos, move_box)] 
     
 CHANGE_COORDINATES = {
     0: (-1, 0),

@@ -33,16 +33,16 @@ def mcts_solve(args, file):
         observation, reward, done, info = solver.take_best_action(observation_mode=observation_mode)
         i += 1
         print(info, file=log)
-        if done and "mcts_giveup" in info:
-            env.reset()
-            i = 0
-        elif done and info["maxsteps_used"]:
-            print("All steps used. Resetting board.", file=log)
+        if done and info == "MCTS Gave up, board unsolvable. Reset board":
             env.reset()
             i = 0
         elif done and info["all_boxes_on_target"]:
             print("Solved {} after {} steps.".format(file.name, i), file=log)
             break
+        elif done and info["maxsteps_used"]:
+            print("Resetting board.", file=log)
+            env.reset()
+            i = 0
         log.flush()
     log.close()
     env.render(mode=args.render_mode)
@@ -63,8 +63,8 @@ if __name__ == '__main__':
     group.add_argument("--file", nargs = "+", help= "file that defines the sokoban map")
     group.add_argument("--folder", help= "folder that contains files which define the sokoban map")
     parser.add_argument("--render_mode", help="Obversation mode for the game", default="human")
-    parser.add_argument("--max_rollouts", type=int, help="Number of rollouts per move", default=350)
-    parser.add_argument("--max_depth", type=int, help="Depth of each rollout", default=10)
+    parser.add_argument("--max_rollouts", type=int, help="Number of rollouts per move", default=4000)
+    parser.add_argument("--max_depth", type=int, help="Depth of each rollout", default=30)
     parser.add_argument("--max_steps", type=int, help="Max moves before game is lost", default=120)
     parser.add_argument("--time_per_board", type=int, help="Allocated Time (in minutes) per board", default=60)
     parser.add_argument("--log_dir", type=str, help="Directory to log solve information", default="./solve_log")
