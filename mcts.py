@@ -25,7 +25,7 @@ class MCTS:
         self.max_depth = max_depth
         self.actions = actions
         self.penalty_for_step = env.penalty_for_step
-        self.reward_finished = np.inf
+        self.reward_finished = env.reward_finished + env.reward_box_on_target
         self.num_boxes= env.num_boxes
         self.room_fixed = env.room_fixed
         self.last_pos = env.player_position
