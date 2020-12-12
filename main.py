@@ -3,7 +3,7 @@ import gym
 import gym_sokoban
 import argparse
 from mcts import MCTS
-from time import time
+from time import time, sleep
 from pathlib import Path
 
 LEGAL_ACTIONS = [1,2,3,4]
@@ -33,12 +33,19 @@ def mcts_solve(args, file):
         observation, reward, done, info = solver.take_best_action(observation_mode=observation_mode)
         i += 1
         print(info, file=log)
-        if done and info == "MCTS Gave up, board unsolvable":
+        if done and info == "MCTS Gave up, board unsolvable. Reset board":
             env.reset()
             i = 0
-        elif done:
+        elif done and info["all_boxes_on_target"]:
             print("Solved {} after {} steps.".format(file.name, i), file=log)
             break
+        elif done and info["maxsteps_used"]:
+            env.reset()
+            i = 0
+        log.flush()
+    env.render()
+    sleep(4)
+    env.close()
     log.close()
 
 def main(args):

@@ -2,3 +2,5 @@
 __pycache__/
 board/
 *.log
+.sokoban_cache/
+gym_sokoban.egg-info/
