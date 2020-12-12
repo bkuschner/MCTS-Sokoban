@@ -44,10 +44,10 @@ def mcts_solve(args, file):
             env.reset()
             i = 0
         log.flush()
-    env.render()
-    sleep(4)
-    env.close()
     log.close()
+    env.render(mode=args.render_mode)
+    sleep(3)
+    env.close()
 
 def main(args):
     if args.file:

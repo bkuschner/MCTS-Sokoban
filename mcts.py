@@ -25,7 +25,7 @@ class MCTS:
         self.max_depth = max_depth
         self.actions = actions
         self.penalty_for_step = env.penalty_for_step
-        self.reward_finished = env.reward_finished + env.reward_box_on_target
+        self.reward_finished = np.inf
         self.num_boxes= env.num_boxes
         self.room_fixed = env.room_fixed
         self.last_pos = env.player_position
@@ -40,7 +40,7 @@ class MCTS:
         best_action = self.mcts(env_state)
         #if mcts couldn't find a sensible move from this position
         if best_action == -1:
-            return None, -1, True, "MCTS Gave up, board unsolvable. Reset board"
+            return None, -1, True, {"mcts_giveup": "MCTS Gave up, board unsolvable. Reset board"}
         observation, reward, done, info = self.env.step(best_action, observation_mode=observation_mode)
         self.last_pos = env_state[2]
         self.moved_box = info["action.moved_box"]
