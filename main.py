@@ -37,7 +37,7 @@ def mcts_solve(args, file):
             env.reset()
             i = 0
         elif done and info["all_boxes_on_target"]:
-            print("Solved {} after {} steps.".format(file.name, i), file=log)
+            print("Solved {} in {} steps in {:.0f} minutes.".format(file.name, i, (now - start_time)/60), file=log)
             break
         elif done and info["maxsteps_used"]:
             print("Resetting board.", file=log)

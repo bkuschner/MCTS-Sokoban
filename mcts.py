@@ -31,10 +31,7 @@ class MCTS:
         self.last_pos = env.player_position
         self.moved_box = True
         self.verbose = verbose
-        # env_state := boxes_on_target(int), num_env_steps(int), player_position(numpy array), room_state(numpy array)
         
-# @param env: a Board that the function will attempt to solve
-# @return: a list of actions to solve the board
     def take_best_action(self, observation_mode="rgb_array"):
         env_state = self.env.get_current_state()
         best_action = self.mcts(env_state)
@@ -46,8 +43,6 @@ class MCTS:
         self.moved_box = info["action.moved_box"]
         return observation, reward, done, info
 
-    # @param env: a mcts_sokoban_env that we are trying to find best move for
-    # @return: best move found for the given env
     def mcts(self, env_state):
         root = Node("0",env_state, last_pos=self.last_pos, move_box=self.moved_box)
         rollouts = 0
@@ -87,8 +82,6 @@ class MCTS:
         untried_actions = set(sensible_actions) - set([child.action for child in node.children])
         action = random.choice(tuple(untried_actions))
         state, observation, reward_last, done, info = self.env.simulate_step(action=action, state=node.state)
-        #print("here")
-        #print(node.state[2], state[2])
         new_child = Node(name=node.name +"-{}".format(action) , state=state, last_pos= node.state[2], move_box = info["action.moved_box"], done=done, parent=node, action=action)
         return new_child, reward_last
 
@@ -106,15 +99,14 @@ class MCTS:
         while not done and depth < self.max_depth:
             possible_actions = self.sensible_actions(state[2], state[3], last_pos, move_box)
             if not possible_actions:
-                done = True
                 break
             action = random.choice(possible_actions)
             new_state, observation, reward, done, info = self.env.simulate_step(action=action, state=state)
             last_pos = state[2]
             move_box = info["action.moved_box"]
             state = new_state
-            total_reward = total_reward + reward
-            depth = depth + 1
+            total_reward += reward
+            depth += 1
         return total_reward + self.heuristic(state[3])
 
     def heuristic(self, room_state):
@@ -136,8 +128,8 @@ class MCTS:
 
     def back_propagate(self, result, node):
         while node is not None:
-            node.utility = node.utility + result
-            node.rollouts = node.rollouts + 1
+            node.utility += result
+            node.rollouts += 1
             result += self.penalty_for_step
             node = node.parent
 
@@ -158,6 +150,7 @@ class MCTS:
             can_push_box = room_state[new_pos[0], new_pos[1]] in [3, 4]
             can_push_box &= room_state[new_box_position[0], new_box_position[1]] in [1, 2]
             if can_push_box:
+                #check if we are pushing a box into a corner
                 if self.room_fixed[new_box_position[0], new_box_position[1]] != 2:
                     box_surroundings_walls = []
                     for i in range(4):
