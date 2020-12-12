@@ -33,12 +33,17 @@ def mcts_solve(args, file):
         observation, reward, done, info = solver.take_best_action(observation_mode=observation_mode)
         i += 1
         print(info, file=log)
-        if done and info == "MCTS Gave up, board unsolvable":
+        if done and "mcts_giveup" in info:
             env.reset()
             i = 0
-        elif done:
+        elif done and info["maxsteps_used"]:
+            print("All steps used. Resetting board.", file=log)
+            env.reset()
+            i = 0
+        elif done and info["all_boxes_on_target"]:
             print("Solved {} after {} steps.".format(file.name, i), file=log)
             break
+        log.flush()
     log.close()
     env.render(mode=args.render_mode)
     sleep(3)
