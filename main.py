@@ -26,7 +26,7 @@ def mcts_solve(args, file):
     actions = []
     env = gym.make("MCTS-Sokoban-v0", dim_room=dim_room, num_boxes=n_boxes, original_map=map, max_steps=args.max_steps)
     solver = MCTS(env=env, max_rollouts=args.max_rollouts, max_depth=args.max_depth, actions=LEGAL_ACTIONS)
-    allocated_time = args.time_per_board * 60
+    allocated_time = args.time_limit * 60
     start_time = time()
     while True:
         now = time()
@@ -40,6 +40,7 @@ def mcts_solve(args, file):
             env.reset()
             actions.clear()
         elif done and info["all_boxes_on_target"]:
+            actions.append("Solved in {:.0f} mins".format((now - start_time)/60))
             break
         elif done and info["maxsteps_used"]:
             env.reset()
